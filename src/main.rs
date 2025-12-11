@@ -1,9 +1,11 @@
-use zero2prod_axum::run;
+use zero2prod_axum::{configuration::get_configuration, run};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let config = get_configuration().expect("Failed to load configuration");
+
+    let address = format!("127.0.0.1:{}", config.application_port);
+
+    let listener = tokio::net::TcpListener::bind(address).await?;
     run(listener).await
 }
