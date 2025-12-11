@@ -1,7 +1,8 @@
-use std::fmt::format;
+use std::{ffi::c_int, fmt::format};
 
 use reqwest::Client;
-use zero2prod_axum::run;
+use sqlx::{Connection, PgConnection};
+use zero2prod_axum::{configuration::get_configuration, run};
 
 async fn spawn_app() -> String {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
@@ -18,8 +19,23 @@ async fn spawn_app() -> String {
 #[tokio::test]
 async fn heath_check() {
     let addr = spawn_app().await;
-    let client = reqwest::Client::new();
 
+    let config = get_configuration().expect("Failed to load configuration");
+    let url = config.database.connection_string();
+
+    let mut connection = PgConnection::connect(&url)
+        .await
+        .expect("Failed postgres connection");
+
+    let saved = sqlx::query!("SELECT email, name FROM subscriptions")
+        .fetch_one(&mut connection)
+        .await
+        .expect("Failed to fetch saved subscription");
+
+    assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+    assert_eq!(saved.name, "le guin");
+
+    let client = reqwest::Client::new();
     let response = client
         .get(format!("{}/health-check", addr))
         .send()
