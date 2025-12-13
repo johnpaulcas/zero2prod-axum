@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{env, sync::LazyLock};
 
 use secrecy::Secret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -11,7 +11,14 @@ use zero2prod_axum::{
 };
 
 static TRACING: LazyLock<()> = LazyLock::new(|| {
-    init_telemetry("test".into(), "debug".into());
+    let subscriber_name = "test".into();
+    let default_filter_level = "info".into();
+
+    if env::var("TEST_LOG").is_ok() {
+        init_telemetry(subscriber_name, default_filter_level, std::io::stdout);
+    } else {
+        init_telemetry(subscriber_name, default_filter_level, std::io::sink);
+    }
 });
 
 pub struct TestAppState {
