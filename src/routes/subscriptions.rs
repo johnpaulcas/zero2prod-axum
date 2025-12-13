@@ -1,12 +1,9 @@
-use std::os::macos::raw::stat;
 use std::sync::Arc;
 
 use axum::{Form, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use sqlx::PgPool;
-use tracing::Instrument;
 use tracing::error;
-use tracing::info;
 use uuid::Uuid;
 
 use crate::startup::AppState;
@@ -21,7 +18,6 @@ pub struct FormData {
     name = "Adding new subscriber",
     skip_all,
     fields(
-        request_id = %Uuid::new_v4(),
         subscriber_email = %form.email,
         subscriber_name = %form.name
     )
