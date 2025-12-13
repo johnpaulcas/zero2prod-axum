@@ -1,5 +1,6 @@
 use std::sync::LazyLock;
 
+use secrecy::Secret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 use uuid::Uuid;
@@ -44,7 +45,7 @@ pub async fn create_database(config: &DatabaseSettings) -> PgPool {
     let maintenance_settings = DatabaseSettings {
         database_name: "postgres".to_string(),
         username: "postgres".to_string(),
-        password: "password".to_string(),
+        password: Secret::new("password".to_string()),
         ..config.clone()
     };
 
