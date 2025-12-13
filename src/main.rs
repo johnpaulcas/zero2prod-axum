@@ -3,7 +3,7 @@ use zero2prod_axum::{configuration::get_configuration, startup::run, telemetry::
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    init_telemetry("zero2prod".into(), "info".into());
+    init_telemetry("zero2prod".into(), "info".into(), std::io::stdout);
 
     let config = get_configuration().expect("Failed to load configuration");
     let address = format!("127.0.0.1:{}", config.application_port);
