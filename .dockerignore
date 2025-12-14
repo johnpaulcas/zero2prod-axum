@@ -1,5 +1,5 @@
 .env
-targets/
+target/
 tests/
 Dockerfile
 scripts/
