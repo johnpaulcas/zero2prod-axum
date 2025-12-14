@@ -6,11 +6,10 @@ async fn main() -> Result<(), std::io::Error> {
     init_telemetry("zero2prod".into(), "info".into(), std::io::stdout);
 
     let config = get_configuration().expect("Failed to load configuration");
-    let address = format!("127.0.0.1:{}", config.application_port);
+    let address = format!("{}:{}", config.application.host, config.application.port);
 
-    let pg_pool = PgPool::connect(&config.database.connection_string())
-        .await
-        .expect("Failed connecting to database");
+    let pg_pool = PgPool::connect_lazy(&config.database.connection_string())
+        .expect("Failed to create Postgres connection pool");
 
     let listener = tokio::net::TcpListener::bind(address).await?;
     run(listener, pg_pool).await?;
