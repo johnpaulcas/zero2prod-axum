@@ -4,18 +4,28 @@ use axum::{Form, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use sqlx::PgPool;
 use tracing::error;
-use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 
-use crate::{
-    domain::{NewSubscriber, SubsciberName},
-    startup::AppState,
-};
+use crate::domain::NewSubscriber;
+use crate::domain::SubsciberName;
+use crate::domain::SubscriberEmail;
+use crate::startup::AppState;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct FormData {
     email: String,
     name: String,
+}
+
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(value: FormData) -> Result<Self, Self::Error> {
+        let email = SubscriberEmail::parse(value.email)?;
+        let name = SubsciberName::parse(value.name)?;
+
+        Ok(Self { email, name })
+    }
 }
 
 #[tracing::instrument(
@@ -30,17 +40,12 @@ pub async fn subscribe(
     State(state): State<Arc<AppState>>,
     Form(form): Form<FormData>,
 ) -> impl IntoResponse {
-    let name = match SubsciberName::parse(form.name) {
-        Ok(name) => name,
+    let new_subscriber = match form.try_into() {
+        Ok(subscriber) => subscriber,
         Err(_) => return StatusCode::BAD_REQUEST,
     };
 
-    let new_subsriber = NewSubscriber {
-        email: form.email,
-        name,
-    };
-
-    match insert_subscriber(&state.pg_pool, &new_subsriber).await {
+    match insert_subscriber(&state.pg_pool, &new_subscriber).await {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
@@ -55,7 +60,7 @@ pub async fn insert_subscriber(pool: &PgPool, form: &NewSubscriber) -> Result<()
     "#,
         Uuid::new_v4(),
         form.name.as_ref(),
-        form.email,
+        form.email.as_ref(),
         Utc::now()
     )
     .execute(pool)
